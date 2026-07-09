@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f1a17">
+<title>Conteo Físico · Variedades Jared</title>
+<style>
+  :root{
+    --ink:#111917;
+    --ink-soft:#4b5a55;
+    --line:#e3e8e5;
+    --bg:#f6f8f7;
+    --card:#ffffff;
+    --pitch:#128a4b;         /* verde cancha - acento principal */
+    --pitch-dk:#0d6c3a;
+    --amber:#c77700;         /* faltan */
+    --amber-bg:#fff4e2;
+    --sky:#1f6feb;           /* sobran */
+    --sky-bg:#e9f1ff;
+    --slate:#6b7a75;         /* no contados */
+    --slate-bg:#eef1f0;
+    --ok:#128a4b;            /* coinciden */
+    --ok-bg:#e6f5ec;
+    --danger:#b3261e;
+    --shadow:0 1px 2px rgba(16,30,25,.06),0 2px 8px rgba(16,30,25,.05);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);
+    font-size:15px;line-height:1.35;
+    padding-bottom:96px;
+  }
+  button{font-family:inherit;cursor:pointer}
+  .hidden{display:none !important}
+
+  /* ---------- Header ---------- */
+  /* ---------- Sticky top (header + barra de filtros activos) ---------- */
+  .sticky-top{position:sticky;top:0;z-index:40}
+  header{
+    background:var(--pitch);color:#fff;
+    padding:10px 14px;
+    box-shadow:0 2px 8px rgba(13,108,58,.25);
+  }
+  .active-bar{background:var(--card);border-bottom:1px solid var(--line);
+    padding:6px 10px;display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+  .active-bar::-webkit-scrollbar{display:none}
+  .ab-label{flex:0 0 auto;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--slate)}
+  .ab-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;background:var(--ok-bg);color:var(--pitch-dk);
+    border:1px solid var(--pitch);border-radius:999px;padding:3px 6px 3px 9px;font-size:11px;font-weight:700;white-space:nowrap}
+  .ab-chip .x{font-size:14px;font-weight:800;line-height:1}
+  .h-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .h-title{font-weight:800;font-size:16px;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+  .h-title small{font-weight:600;opacity:.85;font-size:12px}
+  .h-status{font-size:12px;opacity:.95;margin-top:2px}
+  .badge-count{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);
+    padding:3px 9px;border-radius:999px;font-weight:700;font-size:12px;white-space:nowrap}
+
+  /* ---------- Controls ---------- */
+  .controls{background:var(--bg);
+    padding:10px 12px 8px;border-bottom:1px solid var(--line)}
+  .search{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;
+    font-size:15px;background:var(--card);color:var(--ink)}
+  .search:focus{outline:none;border-color:var(--pitch)}
+  .chips{display:flex;gap:7px;overflow-x:auto;padding:9px 0 2px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;padding:7px 13px;border-radius:999px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink-soft);font-size:13px;font-weight:600;white-space:nowrap}
+  .chip.on{background:var(--pitch);border-color:var(--pitch);color:#fff}
+  .chip-label{flex:0 0 auto;align-self:center;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.4px;color:var(--slate);padding-right:2px}
+
+  .toolbar{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:1}
+  .seg button{flex:1;border:0;background:transparent;padding:9px 6px;font-size:13px;font-weight:700;color:var(--ink-soft)}
+  .seg button.on{background:var(--ink);color:#fff}
+  .seg.tramite button.on{background:var(--sky)}
+  .mini-toggle{flex:0 0 auto;padding:9px 11px;border:1px solid var(--line);border-radius:10px;
+    background:var(--card);font-size:12px;font-weight:700;color:var(--ink-soft)}
+  .mini-toggle.on{background:var(--pitch);border-color:var(--pitch);color:#fff}
+  .mini-toggle .fbadge{background:var(--pitch);color:#fff;border-radius:999px;font-size:10px;
+    font-weight:800;padding:0 6px;margin-left:5px;line-height:16px;display:inline-block}
+  .mini-toggle.on .fbadge{background:#fff;color:var(--pitch)}
+
+  /* ---------- Filter panel ---------- */
+  .filter-panel{margin-top:9px;background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:11px;box-shadow:var(--shadow)}
+  .filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .fld label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;
+    color:var(--slate);margin-bottom:3px}
+  .fld select{width:100%;padding:9px 8px;border:1px solid var(--line);border-radius:9px;
+    font-size:14px;background:var(--bg);color:var(--ink);font-weight:600}
+  .fld select:focus{outline:none;border-color:var(--pitch)}
+  .fld select.active{border-color:var(--pitch);background:var(--ok-bg)}
+  .filter-panel .clear{margin-top:10px;width:100%;border:1px solid var(--line);background:var(--bg);
+    border-radius:9px;padding:9px;font-size:13px;font-weight:700;color:var(--ink-soft)}
+
+  /* ---------- List ---------- */
+  main{padding:6px 12px}
+  .group-head{position:sticky;top:172px;z-index:20;background:var(--bg);
+    display:flex;align-items:baseline;gap:8px;padding:12px 2px 6px;margin-top:4px}
+  .group-head b{font-size:15px}
+  .group-head span{font-size:12px;color:var(--slate)}
+  .group-head .rule{flex:1;height:1px;background:var(--line);margin-left:4px}
+
+  .card{display:flex;gap:11px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:10px;margin-bottom:9px;box-shadow:var(--shadow);align-items:center}
+  .thumb{width:62px;height:62px;flex:0 0 auto;border-radius:10px;overflow:hidden;background:#eef1f0;
+    display:flex;align-items:center;justify-content:center;color:var(--slate);font-size:22px}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .info{flex:1;min-width:0}
+  .info .team{font-weight:800;font-size:15px;line-height:1.2;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .dor{background:var(--ink);color:#fff;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px}
+  .tal{background:var(--pitch);color:#fff;font-size:11px;font-weight:800;border-radius:6px;padding:1px 7px}
+  .meta{font-size:12px;color:var(--ink-soft);margin-top:3px;line-height:1.3}
+  .meta .sep{color:var(--line)}
+  .extras{font-size:11px;color:var(--slate);margin-top:2px}
+  .sysline{font-size:11px;color:var(--slate);margin-top:3px}
+  .breakdown{font-size:11px;font-weight:700;margin-top:3px}
+  .breakdown .f{color:var(--ink)}
+  .breakdown .t{color:var(--sky)}
+
+  .counter{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .cbtns{display:flex;align-items:center;gap:6px}
+  .cbtn{width:40px;height:40px;border-radius:11px;border:1px solid var(--line);background:var(--card);
+    font-size:22px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center;
+    line-height:1}
+  .cbtn.plus{background:var(--pitch);border-color:var(--pitch);color:#fff}
+  .cbtn.plus.tramite{background:var(--sky);border-color:var(--sky)}
+  .cbtn:active{transform:scale(.94)}
+  .cnum{min-width:34px;text-align:center;font-weight:800;font-size:19px}
+  .cnum.counted{color:var(--pitch)}
+
+  .empty{text-align:center;color:var(--slate);padding:40px 20px;font-size:14px}
+
+  /* ---------- Model-grouped card (varias tallas) ---------- */
+  .model-card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:10px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .mc-head{display:flex;gap:11px;align-items:center}
+  .mc-info{flex:1;min-width:0}
+  .mc-total{flex:0 0 auto;text-align:right;font-size:10px;color:var(--slate);text-transform:uppercase;letter-spacing:.3px}
+  .mc-total b{display:block;font-size:19px;font-weight:800;color:var(--ink);line-height:1.1}
+  .mc-total b.counted{color:var(--pitch)}
+  .sizes{margin-top:9px;border-top:1px dashed var(--line);padding-top:5px;display:flex;flex-direction:column}
+  .size-row{display:flex;align-items:center;gap:10px;padding:6px 2px}
+  .size-row+.size-row{border-top:1px solid var(--bg)}
+  .size-row .tal{flex:0 0 auto;min-width:40px;text-align:center}
+  .sr-mid{flex:1;min-width:0;font-size:11px;font-weight:700}
+  .sr-mid .f{color:var(--ink)}
+  .sr-mid .t{color:var(--sky)}
+  .size-row .cbtns{flex:0 0 auto}
+
+  /* ---------- Footer action bar ---------- */
+  .fab{position:fixed;left:0;right:0;bottom:0;z-index:45;background:rgba(246,248,247,.92);
+    backdrop-filter:blur(6px);border-top:1px solid var(--line);padding:10px 12px;
+    display:flex;gap:8px}
+  .fab .btn{flex:1;border:0;border-radius:12px;padding:13px 10px;font-weight:800;font-size:14px}
+  .btn-primary{background:var(--pitch);color:#fff}
+  .btn-ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);flex:0 0 auto;padding:13px 15px}
+
+  /* ---------- Pause overlay ---------- */
+  .pause{position:fixed;inset:0;z-index:60;background:rgba(15,26,23,.94);color:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px}
+  .pause h2{margin:0;font-size:22px}
+  .pause p{margin:0;opacity:.8;font-size:14px;max-width:280px}
+  .pause .big{font-size:15px;font-weight:800;background:#fff;color:var(--ink);border:0;border-radius:14px;padding:15px 34px}
+
+  /* ---------- Comparison ---------- */
+  .cmp{position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto}
+  .cmp-head{position:sticky;top:0;z-index:10;background:var(--ink);color:#fff;padding:12px 14px}
+  .cmp-head .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .cmp-head h2{margin:0;font-size:17px;font-weight:800}
+  .cmp-back{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;
+    border-radius:10px;padding:8px 12px;font-weight:700;font-size:13px}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .sm{background:rgba(255,255,255,.1);border-radius:12px;padding:10px 8px;text-align:center}
+  .sm b{display:block;font-size:20px;font-weight:800}
+  .sm span{font-size:10.5px;opacity:.85;text-transform:uppercase;letter-spacing:.3px}
+  .sm.diff b{color:#ffd166}
+
+  .cmp-filters{position:sticky;top:0;background:var(--bg);padding:10px 12px 6px;z-index:9;
+    border-bottom:1px solid var(--line)}
+  .cmp-body{padding:8px 12px 40px}
+  .crow{display:flex;gap:11px;background:var(--card);border:1px solid var(--line);border-left-width:4px;
+    border-radius:12px;padding:10px;margin-bottom:8px;box-shadow:var(--shadow)}
+  .crow.ok{border-left-color:var(--ok)}
+  .crow.faltan{border-left-color:var(--amber)}
+  .crow.sobran{border-left-color:var(--sky)}
+  .crow.nocont{border-left-color:var(--slate)}
+  .crow .thumb{width:52px;height:52px}
+  .crow .nums{flex:0 0 auto;text-align:right;font-size:12px;line-height:1.5}
+  .crow .nums .big{font-size:17px;font-weight:800}
+  .tag{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;
+    border-radius:6px;padding:2px 7px;margin-top:3px}
+  .tag.ok{background:var(--ok-bg);color:var(--ok)}
+  .tag.faltan{background:var(--amber-bg);color:var(--amber)}
+  .tag.sobran{background:var(--sky-bg);color:var(--sky)}
+  .tag.nocont{background:var(--slate-bg);color:var(--slate)}
+  .diff-pos{color:var(--sky)}
+  .diff-neg{color:var(--amber)}
+
+  .cmp-actions{display:flex;gap:8px;padding:0 12px 20px}
+  .cmp-actions button{flex:1;border-radius:12px;padding:12px;font-weight:800;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+  .cmp-actions .exp{background:var(--pitch);color:#fff;border-color:var(--pitch)}
+
+  /* ---------- Toast / overlay generic ---------- */
+  .screen{position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;text-align:center;padding:28px}
+  .spinner{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--pitch);
+    border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .screen p{color:var(--ink-soft);font-size:14px;margin:0;max-width:320px}
+  .screen .err{color:var(--danger);font-weight:700}
+  .screen button{background:var(--pitch);color:#fff;border:0;border-radius:12px;padding:12px 26px;font-weight:800}
+
+  @media (min-width:620px){
+    body{max-width:720px;margin:0 auto;background:var(--card)}
+    .controls,.group-head,.cmp-filters{background:var(--card)}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<!-- ====== LOADING / ERROR SCREEN ====== -->
+<div id="screen" class="screen">
+  <div id="spinner" class="spinner"></div>
+  <p id="screenMsg">Conectando con Firebase y leyendo el inventario…</p>
+  <button id="screenBtn" class="hidden">Reintentar</button>
+</div>
+
+<!-- ====== APP ====== -->
+<div id="app" class="hidden">
+  <div class="sticky-top">
+    <header>
+      <div class="h-row">
+        <div>
+          <div class="h-title">📋 Conteo físico <small>Variedades Jared</small></div>
+          <div class="h-status" id="status">—</div>
+        </div>
+        <div class="badge-count" id="totalBadge">0 uds</div>
+      </div>
+    </header>
+    <div id="activeBar" class="active-bar hidden"></div>
+  </div>
+
+  <div class="controls">
+    <input id="search" class="search" type="text" inputmode="search" placeholder="Buscar por equipo…" autocomplete="off">
+    <div class="chips" id="tallaChips"></div>
+    <div class="toolbar">
+      <div class="seg" id="modeSeg">
+        <button data-mode="fisico" class="on">Conteo físico</button>
+        <button data-mode="tramite">En trámite</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="mini-toggle" id="btnFilters">Filtros<span class="fbadge hidden" id="fBadge">0</span></button>
+      <button class="mini-toggle" id="soloSinContar">Sin contar</button>
+    </div>
+    <div class="filter-panel hidden" id="filterPanel"></div>
+  </div>
+
+  <main id="list"></main>
+
+  <div class="fab">
+    <button class="btn btn-ghost" id="btnPause" title="Pausar">⏸</button>
+    <button class="btn btn-primary" id="btnClose">Cerrar conteo y comparar</button>
+    <button class="btn btn-ghost" id="btnReset" title="Reiniciar conteo">🗑</button>
+  </div>
+</div>
+
+<!-- ====== PAUSE OVERLAY ====== -->
+<div id="pauseView" class="pause hidden">
+  <h2>Conteo en pausa</h2>
+  <p>Tu conteo está guardado en este dispositivo. Podés cerrar la pestaña y retomar después.</p>
+  <div id="pauseStats" style="font-size:13px;opacity:.8"></div>
+  <button class="big" id="btnResume">Reanudar conteo</button>
+</div>
+
+<!-- ====== COMPARISON VIEW ====== -->
+<div id="cmpView" class="cmp hidden">
+  <div class="cmp-head">
+    <div class="top">
+      <h2>Comparativo</h2>
+      <button class="cmp-back" id="cmpBack">← Volver al conteo</button>
+    </div>
+    <div class="summary" id="cmpSummary"></div>
+  </div>
+  <div class="cmp-filters">
+    <div class="chips" id="cmpChips"></div>
+  </div>
+  <div class="cmp-body" id="cmpBody"></div>
+  <div class="cmp-actions">
+    <button id="cmpExport" class="exp">Exportar CSV</button>
+    <button id="cmpNuevo">Nuevo conteo (limpiar)</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+/* ============================================================
+   ⬇️  PEGÁ AQUÍ TU CONFIG DE FIREBASE (proyecto variedades-jared)
+   Usá exactamente el mismo objeto config de tus otras herramientas.
+   Podés cambiar "11.0.2" arriba por la versión que usan tus otras tools.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "PEGÁ_AQUÍ",
+  authDomain: "variedades-jared.firebaseapp.com",
+  projectId: "variedades-jared",
+  storageBucket: "variedades-jared.appspot.com",
+  messagingSenderId: "PEGÁ_AQUÍ",
+  appId: "PEGÁ_AQUÍ"
+};
+const COLECCION = "jared";
+const DOCUMENTO = "datos";
+const CAMPO_INV = "inv";
+const LS_KEY = "conteo_fisico_jared_v1";
+/* ============================================================ */
+
+let db;
+let productos = [];                 // inventario cargado al abrir (para mostrar tarjetas)
+let estado = { fisico:{}, tramite:{}, startedAt:null, updatedAt:null };
+let ui = { search:"", talla:"__all__", mode:"fisico", soloSinContar:false, filters:{}, panelAbierto:false };
+
+const $ = s => document.querySelector(s);
+const el = (id) => document.getElementById(id);
+
+/* -------- localStorage -------- */
+function cargarEstado(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){ const p = JSON.parse(raw); estado = Object.assign({fisico:{},tramite:{}}, p); }
+  }catch(e){ console.warn("No se pudo leer el conteo guardado", e); }
+  if(!estado.fisico) estado.fisico={};
+  if(!estado.tramite) estado.tramite={};
+}
+function guardarEstado(){
+  estado.updatedAt = Date.now();
+  if(!estado.startedAt) estado.startedAt = estado.updatedAt;
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(estado)); }catch(e){ console.warn(e); }
+}
+const contadoTotal = id => (estado.fisico[id]||0) + (estado.tramite[id]||0);
+
+/* -------- Firebase (SOLO LECTURA) -------- */
+async function leerInventario(){
+  const snap = await getDoc(doc(db, COLECCION, DOCUMENTO));
+  if(!snap.exists()) throw new Error("El documento no existe.");
+  const raw = snap.data()[CAMPO_INV];
+  if(raw == null) throw new Error("El campo '"+CAMPO_INV+"' está vacío.");
+  const arr = typeof raw === "string" ? JSON.parse(raw) : raw;
+  if(!Array.isArray(arr)) throw new Error("El inventario no tiene el formato esperado.");
+  return arr;
+}
+
+/* -------- Helpers de producto -------- */
+function fotoPrincipal(p){
+  const fs = Array.isArray(p.fotos) ? p.fotos : [];
+  const pr = fs.find(f => f && f.principal && f.url);
+  return (pr && pr.url) || (fs[0] && fs[0].url) || null;
+}
+function extrasStr(p){
+  const e = p.extras;
+  if(!e || typeof e !== "object") return "";
+  return Object.entries(e).map(([k,v]) => `${k}: ${v}`).join(" · ");
+}
+function nombre(p){
+  return [p.eq, p.dor ? "#"+p.dor : "", p.ver, p.col, p.año].filter(Boolean).join(" ");
+}
+
+/* Orden de tallas: estándar primero, luego lo demás por orden natural */
+const TALLA_ORDER = ["XS","S","M","L","XL","XXL","2XL","XXXL","3XL","4XL"];
+function tallaKey(t){
+  const T = (t||"").toString().trim().toUpperCase();
+  const i = TALLA_ORDER.indexOf(T);
+  if(i >= 0) return [0, i, T];
+  const n = parseFloat(T);
+  if(!isNaN(n)) return [1, n, T];
+  return [2, 0, T];
+}
+function cmpTalla(a,b){
+  const ka = tallaKey(a), kb = tallaKey(b);
+  for(let i=0;i<3;i++){ if(ka[i]<kb[i]) return -1; if(ka[i]>kb[i]) return 1; }
+  return 0;
+}
+
+/* -------- Render lista -------- */
+function tallasUnicas(){
+  const set = new Set(productos.map(p => (p.tal||"—").toString().trim() || "—"));
+  return [...set].sort(cmpTalla);
+}
+/* -------- Filtros dinámicos -------- */
+function filterDefs(){
+  const defs = [
+    {key:"eq",  label:"Equipo"},
+    {key:"ver", label:"Versión"},
+    {key:"año", label:"Año"},
+    {key:"col", label:"Color"},
+  ];
+  const exKeys = new Set();
+  productos.forEach(p => { if(p.extras && typeof p.extras==="object") Object.keys(p.extras).forEach(k=>exKeys.add(k)); });
+  [...exKeys].sort((a,b)=>a.localeCompare(b)).forEach(k => defs.push({key:"ex:"+k, label:k}));
+  return defs;
+}
+function valorCampo(p, key){
+  if(key.startsWith("ex:")){
+    const k = key.slice(3);
+    return (p.extras && p.extras[k]!=null) ? String(p.extras[k]).trim() : "";
+  }
+  const v = p[key];
+  return v==null ? "" : String(v).trim();
+}
+function opcionesCampo(key){
+  const set = new Set();
+  productos.forEach(p => { const v = valorCampo(p,key); if(v) set.add(v); });
+  const arr = [...set];
+  if(key==="año") arr.sort((a,b)=> (parseFloat(b)||0)-(parseFloat(a)||0) || a.localeCompare(b));
+  else arr.sort((a,b)=> a.localeCompare(b, "es", {numeric:true}));
+  return arr;
+}
+function filtrosActivos(){
+  return Object.entries(ui.filters).filter(([,v]) => v && v!=="__all__");
+}
+function renderFilterPanel(){
+  const panel = el("filterPanel");
+  const defs = filterDefs();
+  let html = `<div class="filter-grid">`;
+  for(const d of defs){
+    const val = ui.filters[d.key] || "__all__";
+    const activo = val!=="__all__";
+    const opts = opcionesCampo(d.key)
+      .map(o => `<option value="${escapeAttr(o)}" ${val===o?"selected":""}>${escapeHtml(o)}</option>`).join("");
+    html += `<div class="fld">
+      <label>${escapeHtml(d.label)}</label>
+      <select data-key="${escapeAttr(d.key)}" class="${activo?"active":""}">
+        <option value="__all__">Todos</option>${opts}
+      </select></div>`;
+  }
+  html += `</div><button class="clear" id="btnLimpiar">Limpiar filtros</button>`;
+  panel.innerHTML = html;
+  panel.querySelectorAll("select").forEach(s => s.onchange = () => {
+    ui.filters[s.dataset.key] = s.value;
+    actualizarBadge(); renderFilterPanel(); renderLista();
+  });
+  el("btnLimpiar").onclick = () => { ui.filters={}; actualizarBadge(); renderFilterPanel(); renderLista(); };
+}
+function actualizarBadge(){
+  const n = filtrosActivos().length;
+  const b = el("fBadge");
+  b.textContent = n; b.classList.toggle("hidden", n===0);
+  el("btnFilters").classList.toggle("on", n>0);
+}
+
+/* Barra pequeña y fija: solo muestra los filtros aplicados, con ✕ para quitarlos */
+function renderActiveBar(){
+  const chips = [];
+  if(ui.talla !== "__all__")
+    chips.push({txt:`Talla: ${ui.talla}`, clear:()=>{ ui.talla="__all__"; renderTallaChips(); }});
+  if(ui.search.trim())
+    chips.push({txt:`Equipo: ${ui.search.trim()}`, clear:()=>{ ui.search=""; el("search").value=""; }});
+  if(ui.soloSinContar)
+    chips.push({txt:`Sin contar`, clear:()=>{ ui.soloSinContar=false; el("soloSinContar").classList.remove("on"); }});
+  const defs = filterDefs();
+  for(const [key,val] of filtrosActivos()){
+    const d = defs.find(x=>x.key===key);
+    chips.push({txt:`${d?d.label:key}: ${val}`, clear:()=>{ ui.filters[key]="__all__"; }});
+  }
+
+  const bar = el("activeBar");
+  if(chips.length===0){ bar.classList.add("hidden"); bar.innerHTML=""; return; }
+  bar.classList.remove("hidden");
+  bar.innerHTML = `<span class="ab-label">Filtros:</span>` +
+    chips.map((c,i)=>`<button class="ab-chip" data-i="${i}">${escapeHtml(c.txt)} <span class="x">×</span></button>`).join("");
+  bar.querySelectorAll(".ab-chip").forEach(b => b.onclick = () => { chips[+b.dataset.i].clear(); afterFilterChange(); });
+}
+
+function afterFilterChange(){ actualizarBadge(); renderFilterPanel(); renderActiveBar(); renderLista(); }
+
+function renderTallaChips(){
+  const cont = el("tallaChips");
+  const tallas = tallasUnicas();
+  let html = `<span class="chip-label">Talla</span>`;
+  html += `<button class="chip ${ui.talla==="__all__"?"on":""}" data-talla="__all__">Todas</button>`;
+  html += tallas.map(t => `<button class="chip ${ui.talla===t?"on":""}" data-talla="${escapeAttr(t)}">${escapeHtml(t)}</button>`).join("");
+  cont.innerHTML = html;
+  cont.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+    ui.talla = c.dataset.talla; renderTallaChips(); renderActiveBar(); renderLista();
+  });
+}
+
+function productosFiltrados(){
+  const q = ui.search.trim().toLowerCase();
+  return productos.filter(p => {
+    if(ui.talla !== "__all__" && ((p.tal||"—").toString().trim() || "—") !== ui.talla) return false;
+    if(q && !(p.eq||"").toLowerCase().includes(q)) return false;
+    if(ui.soloSinContar && contadoTotal(p.id) > 0) return false;
+    for(const [key,val] of filtrosActivos()){ if(valorCampo(p,key) !== val) return false; }
+    return true;
+  });
+}
+
+/* clave de modelo = todas las variables MENOS la talla (como agrupa la app principal) */
+function modelKey(p){
+  let ex = "";
+  if(p.extras && typeof p.extras==="object"){
+    ex = Object.keys(p.extras).sort().map(k => k+"="+p.extras[k]).join("|");
+  }
+  return JSON.stringify([p.eq||"", p.dor||"", p.ver||"", p.col||"", p.año||"", ex]);
+}
+
+function renderLista(){
+  const list = el("list");
+  const items = productosFiltrados();
+
+  if(items.length === 0){
+    list.innerHTML = `<div class="empty">No hay productos con estos filtros.<br>Probá quitar el filtro de talla o el buscador.</div>`;
+    return;
+  }
+
+  const tallasVisibles = new Set(items.map(p => (p.tal||"—").toString().trim() || "—"));
+  if(tallasVisibles.size >= 2) renderAgrupado(items);
+  else renderPlano(items);
+
+  // Conectar botones (sirve para ambos layouts)
+  list.querySelectorAll(".cbtn.plus").forEach(b => { b.onclick = () => cambiar(b.dataset.id, +1); b.classList.toggle("tramite", ui.mode==="tramite"); });
+  list.querySelectorAll(".cbtn.minus").forEach(b => b.onclick = () => cambiar(b.dataset.id, -1));
+}
+
+/* Vista PLANA: una tarjeta por producto (cuando se ve una sola talla) */
+function renderPlano(items){
+  items.sort((a,b) => cmpTalla(a.tal,b.tal) || (a.eq||"").localeCompare(b.eq||"") || (a.dor||"").localeCompare(b.dor||""));
+  el("list").innerHTML = items.map(cardHtml).join("");
+}
+
+/* Vista AGRUPADA por modelo: una tarjeta con una fila por talla (2+ tallas visibles) */
+function renderAgrupado(items){
+  const grupos = new Map();
+  for(const p of items){
+    const k = modelKey(p);
+    if(!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push(p);
+  }
+  const arr = [...grupos.values()];
+  arr.forEach(g => g.sort((a,b)=>cmpTalla(a.tal,b.tal)));
+  arr.sort((ga,gb) => {
+    const a=ga[0], b=gb[0];
+    return (a.eq||"").localeCompare(b.eq||"") || (a.dor||"").localeCompare(b.dor||"")
+        || (a.ver||"").localeCompare(b.ver||"") || (a.col||"").localeCompare(b.col||"");
+  });
+  el("list").innerHTML = arr.map(modelCardHtml).join("");
+}
+
+function modelCardHtml(grupo){
+  const rep = grupo.find(p => fotoPrincipal(p)) || grupo[0];
+  const foto = fotoPrincipal(rep);
+  const thumb = foto ? `<img loading="lazy" decoding="async" src="${escapeAttr(foto)}" alt="">` : `👕`;
+  const ex = extrasStr(rep);
+  const totalModelo = grupo.reduce((s,p)=>s+contadoTotal(p.id),0);
+
+  const filas = grupo.map(p => {
+    const f = estado.fisico[p.id]||0, t = estado.tramite[p.id]||0, total = f+t;
+    const plusT = ui.mode==="tramite" ? "tramite" : "";
+    return `
+    <div class="size-row" data-id="${escapeAttr(p.id)}">
+      <span class="tal">${escapeHtml((p.tal||"—").toString())}</span>
+      <div class="sr-mid"><span class="breakdown"><span class="f">Físico: ${f}</span>${t?` · <span class="t">Trámite: ${t}</span>`:""}</span></div>
+      <div class="cbtns">
+        <button class="cbtn minus" data-id="${escapeAttr(p.id)}">−</button>
+        <span class="cnum ${total>0?"counted":""}">${total}</span>
+        <button class="cbtn plus ${plusT}" data-id="${escapeAttr(p.id)}">+</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `
+  <div class="model-card" data-model="1">
+    <div class="mc-head">
+      <div class="thumb">${thumb}</div>
+      <div class="mc-info">
+        <div class="team">${escapeHtml(rep.eq||"—")}${rep.dor?`<span class="dor">#${escapeHtml(rep.dor)}</span>`:""}</div>
+        <div class="meta">${[rep.ver,rep.col,rep.año].filter(Boolean).map(escapeHtml).join(' <span class="sep">·</span> ')||"—"}</div>
+        ${ex?`<div class="extras">${escapeHtml(ex)}</div>`:""}
+      </div>
+      <div class="mc-total">Modelo<b class="mc-total-num ${totalModelo>0?"counted":""}">${totalModelo}</b></div>
+    </div>
+    <div class="sizes">${filas}</div>
+  </div>`;
+}
+
+function cardHtml(p){
+  const foto = fotoPrincipal(p);
+  const thumb = foto
+    ? `<img loading="lazy" decoding="async" src="${escapeAttr(foto)}" alt="">`
+    : `👕`;
+  const ex = extrasStr(p);
+  const f = estado.fisico[p.id]||0, t = estado.tramite[p.id]||0, total = f+t;
+  const plusTramite = ui.mode==="tramite" ? "tramite" : "";
+  return `
+  <div class="card" data-id="${escapeAttr(p.id)}">
+    <div class="thumb">${thumb}</div>
+    <div class="info">
+      <div class="team">${escapeHtml(p.eq||"—")}
+        ${p.dor?`<span class="dor">#${escapeHtml(p.dor)}</span>`:""}
+        <span class="tal">${escapeHtml((p.tal||"—").toString())}</span>
+      </div>
+      <div class="meta">${[p.ver,p.col,p.año].filter(Boolean).map(escapeHtml).join(' <span class="sep">·</span> ')||"—"}</div>
+      ${ex?`<div class="extras">${escapeHtml(ex)}</div>`:""}
+      <div class="breakdown"><span class="f">Físico: ${f}</span>${t?` · <span class="t">Trámite: ${t}</span>`:""}</div>
+    </div>
+    <div class="counter">
+      <div class="cnum ${total>0?"counted":""}" data-num="${escapeAttr(p.id)}">${total}</div>
+      <div class="cbtns">
+        <button class="cbtn minus" data-id="${escapeAttr(p.id)}">−</button>
+        <button class="cbtn plus ${plusTramite}" data-id="${escapeAttr(p.id)}">+</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* -------- Contar -------- */
+function cambiar(id, delta){
+  const bucket = ui.mode === "tramite" ? estado.tramite : estado.fisico;
+  const nuevo = Math.max(0, (bucket[id]||0) + delta);
+  bucket[id] = nuevo;
+  guardarEstado();
+  actualizarTarjeta(id);
+  actualizarTotales();
+}
+function actualizarTarjeta(id){
+  const f = estado.fisico[id]||0, t = estado.tramite[id]||0, total = f+t;
+  const nodes = el("list").querySelectorAll(`[data-id="${cssEsc(id)}"]`);
+  nodes.forEach(node => {
+    const num = node.querySelector(".cnum");
+    if(num){ num.textContent = total; num.classList.toggle("counted", total>0); }
+    const bd = node.querySelector(".breakdown");
+    if(bd){ bd.innerHTML = `<span class="f">Físico: ${f}</span>${t?` · <span class="t">Trámite: ${t}</span>`:""}`; }
+    // total del modelo (si está dentro de una tarjeta agrupada)
+    const mc = node.closest(".model-card");
+    if(mc){
+      let tot = 0;
+      mc.querySelectorAll(".size-row[data-id]").forEach(r => tot += contadoTotal(r.dataset.id));
+      const mt = mc.querySelector(".mc-total-num");
+      if(mt){ mt.textContent = tot; mt.classList.toggle("counted", tot>0); }
+    }
+  });
+}
+function actualizarTotales(){
+  let uds=0, variantes=0;
+  for(const p of productos){ const c=contadoTotal(p.id); if(c>0){uds+=c;variantes++;} }
+  el("totalBadge").textContent = `${uds} uds`;
+  el("status").textContent = `${productos.length} variantes en sistema · ${variantes} contadas`;
+}
+
+/* -------- Modo / filtros UI -------- */
+function setMode(m){
+  ui.mode = m;
+  const seg = el("modeSeg");
+  seg.classList.toggle("tramite", m==="tramite");
+  seg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.mode===m));
+  // solo actualizar color del botón + sin re-renderizar todo
+  el("list").querySelectorAll(".cbtn.plus").forEach(b => b.classList.toggle("tramite", m==="tramite"));
+}
+
+/* ============================================================
+   COMPARATIVO  (re-lee Firebase para el stock más fresco)
+   ============================================================ */
+function clasificar(contado, sistema){
+  if(sistema===0 && contado===0) return "ignorar";
+  if(contado === sistema) return "ok";
+  if(contado === 0 && sistema > 0) return "nocont";
+  if(contado > 0 && contado < sistema) return "faltan";
+  return "sobran"; // contado > sistema  (incluye stock 0 en sistema con conteo>0)
+}
+
+function construirComparativo(invActual){
+  // mapa id -> producto (stock fresco)
+  const sysMap = new Map();
+  for(const p of invActual) sysMap.set(p.id, p);
+
+  // union de ids (sistema + contados)
+  const ids = new Set([...sysMap.keys()]);
+  for(const k of Object.keys(estado.fisico)) if(estado.fisico[k]>0) ids.add(k);
+  for(const k of Object.keys(estado.tramite)) if(estado.tramite[k]>0) ids.add(k);
+
+  const filas = [];
+  let totalContado=0, totalSistema=0;
+  for(const id of ids){
+    const contado = contadoTotal(id);
+    const pSys = sysMap.get(id);
+    const sistema = pSys ? (Number(pSys.stk)||0) : 0;
+    const cat = clasificar(contado, sistema);
+    totalSistema += sistema;
+    totalContado += contado;
+    if(cat === "ignorar") continue;
+    // producto para mostrar: preferir el fresco; si se borró, usar el de la carga inicial
+    const prod = pSys || productos.find(x => x.id === id) || {id, eq:"(no está en el sistema)"};
+    filas.push({
+      id, cat, contado, sistema, diff: contado - sistema, prod,
+      fisico: estado.fisico[id]||0, tramite: estado.tramite[id]||0
+    });
+  }
+
+  // orden: primero las diferencias (nocont, faltan, sobran), luego ok; dentro por talla/equipo
+  const rank = {nocont:0, faltan:1, sobran:2, ok:3};
+  filas.sort((a,b) => (rank[a.cat]-rank[b.cat]) || cmpTalla(a.prod.tal,b.prod.tal) || (a.prod.eq||"").localeCompare(b.prod.eq||""));
+
+  const conDif = filas.filter(f => f.cat!=="ok").length;
+  return { filas, totalContado, totalSistema, conDif };
+}
+
+let cmpData = null;
+let cmpFiltro = "dif"; // dif | all | ok | faltan | sobran | nocont
+
+async function cerrarYComparar(){
+  mostrarPantalla("Releyendo el stock actual de Firebase para comparar…", false);
+  let invActual;
+  try{ invActual = await leerInventario(); }
+  catch(e){
+    mostrarPantalla("No se pudo releer el stock: "+e.message, true, cerrarYComparar);
+    return;
+  }
+  el("screen").classList.add("hidden");
+  cmpData = construirComparativo(invActual);
+  cmpFiltro = "dif";
+  renderComparativo();
+  el("cmpView").classList.remove("hidden");
+  window.scrollTo(0,0);
+}
+
+function renderComparativo(){
+  const {filas, totalContado, totalSistema, conDif} = cmpData;
+  const diffNeta = totalContado - totalSistema;
+  el("cmpSummary").innerHTML = `
+    <div class="sm"><b>${totalContado}</b><span>Contado</span></div>
+    <div class="sm"><b>${totalSistema}</b><span>En sistema</span></div>
+    <div class="sm diff"><b>${diffNeta>0?"+":""}${diffNeta}</b><span>${conDif} c/diferencia</span></div>`;
+
+  const counts = {
+    all: filas.length,
+    dif: filas.filter(f=>f.cat!=="ok").length,
+    faltan: filas.filter(f=>f.cat==="faltan").length,
+    sobran: filas.filter(f=>f.cat==="sobran").length,
+    nocont: filas.filter(f=>f.cat==="nocont").length,
+    ok: filas.filter(f=>f.cat==="ok").length,
+  };
+  const chips = [
+    ["dif","Solo diferencias"],["all","Todas"],["faltan","Faltan"],
+    ["sobran","Sobran"],["nocont","No contadas"],["ok","Coinciden"]
+  ];
+  el("cmpChips").innerHTML = chips.map(([k,lbl]) =>
+    `<button class="chip ${cmpFiltro===k?"on":""}" data-f="${k}">${lbl} · ${counts[k]}</button>`).join("");
+  el("cmpChips").querySelectorAll(".chip").forEach(c => c.onclick = () => {
+    cmpFiltro = c.dataset.f; renderComparativo();
+  });
+
+  let visibles = filas;
+  if(cmpFiltro==="dif") visibles = filas.filter(f=>f.cat!=="ok");
+  else if(cmpFiltro!=="all") visibles = filas.filter(f=>f.cat===cmpFiltro);
+
+  const body = el("cmpBody");
+  if(visibles.length===0){ body.innerHTML = `<div class="empty">No hay productos en esta categoría.</div>`; return; }
+
+  const tagText = {ok:"Coincide",faltan:"Faltan",sobran:"Sobran",nocont:"No contada"};
+  body.innerHTML = visibles.map(f => {
+    const p = f.prod, foto = fotoPrincipal(p);
+    const thumb = foto ? `<img loading="lazy" decoding="async" src="${escapeAttr(foto)}" alt="">` : `👕`;
+    const ex = extrasStr(p);
+    const diffCls = f.diff>0?"diff-pos":(f.diff<0?"diff-neg":"");
+    const diffTxt = f.diff>0?`+${f.diff}`:`${f.diff}`;
+    return `
+    <div class="crow ${f.cat}">
+      <div class="thumb">${thumb}</div>
+      <div class="info">
+        <div class="team">${escapeHtml(p.eq||"—")}
+          ${p.dor?`<span class="dor">#${escapeHtml(p.dor)}</span>`:""}
+          ${p.tal?`<span class="tal">${escapeHtml(p.tal.toString())}</span>`:""}
+        </div>
+        <div class="meta">${[p.ver,p.col,p.año].filter(Boolean).map(escapeHtml).join(' · ')||""}</div>
+        ${ex?`<div class="extras">${escapeHtml(ex)}</div>`:""}
+        <span class="tag ${f.cat}">${tagText[f.cat]}</span>
+        ${f.tramite?`<span class="extras"> · incluye ${f.tramite} en trámite</span>`:""}
+      </div>
+      <div class="nums">
+        <div class="big">${f.contado} <span style="font-weight:600;color:var(--slate)">vs ${f.sistema}</span></div>
+        <div>Contado / Sistema</div>
+        <div style="font-weight:800;font-size:15px" class="${diffCls}">Dif: ${diffTxt}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* -------- Export CSV -------- */
+function exportarCSV(){
+  const {filas} = cmpData;
+  const head = ["estado","id","equipo","dorsal","talla","version","color","año","extras","contado_fisico","contado_tramite","contado_total","sistema","diferencia"];
+  const esc = v => `"${(v==null?"":String(v)).replace(/"/g,'""')}"`;
+  const cat = {ok:"COINCIDE",faltan:"FALTAN",sobran:"SOBRAN",nocont:"NO_CONTADA"};
+  const rows = filas.map(f => {
+    const p=f.prod;
+    return [cat[f.cat],f.id,p.eq,p.dor,p.tal,p.ver,p.col,p.año,extrasStr(p),f.fisico,f.tramite,f.contado,f.sistema,f.diff].map(esc).join(",");
+  });
+  const csv = "\uFEFF"+[head.map(esc).join(","),...rows].join("\r\n");
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  const fecha = new Date().toISOString().slice(0,16).replace(/[:T]/g,"-");
+  a.href = URL.createObjectURL(blob);
+  a.download = `comparativo_conteo_${fecha}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* -------- Pausa / reset -------- */
+function pausar(){
+  const uds = productos.reduce((s,p)=>s+contadoTotal(p.id),0);
+  const desde = estado.startedAt ? new Date(estado.startedAt).toLocaleString("es-HN",{dateStyle:"short",timeStyle:"short"}) : "—";
+  el("pauseStats").textContent = `${uds} unidades contadas · iniciado ${desde}`;
+  el("pauseView").classList.remove("hidden");
+}
+function reanudar(){ el("pauseView").classList.add("hidden"); }
+function reiniciar(){
+  const uds = productos.reduce((s,p)=>s+contadoTotal(p.id),0);
+  if(!confirm(`¿Borrar el conteo actual? Se perderán ${uds} unidades contadas en este dispositivo. Firebase NO se toca.`)) return;
+  if(!confirm(`Confirmá una vez más: esto NO se puede deshacer. ¿Borrar el conteo de ${uds} unidades?`)) return;
+  estado = { fisico:{}, tramite:{}, startedAt:Date.now(), updatedAt:Date.now() };
+  guardarEstado();
+  el("cmpView").classList.add("hidden");
+  renderTallaChips(); renderLista(); actualizarTotales();
+}
+
+/* -------- Pantalla genérica -------- */
+function mostrarPantalla(msg, esError, onRetry){
+  el("app").classList.add("hidden");
+  el("cmpView").classList.add("hidden");
+  const s = el("screen"); s.classList.remove("hidden");
+  el("spinner").classList.toggle("hidden", esError);
+  const m = el("screenMsg"); m.textContent = msg; m.classList.toggle("err", !!esError);
+  const b = el("screenBtn");
+  if(esError && onRetry){ b.classList.remove("hidden"); b.onclick = onRetry; }
+  else b.classList.add("hidden");
+}
+
+/* -------- Utils de escape -------- */
+function escapeHtml(s){ return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function escapeAttr(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function cssEsc(s){ return String(s).replace(/["\\]/g,"\\$&"); }
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init(){
+  cargarEstado();
+  try{
+    const appFb = initializeApp(firebaseConfig);
+    db = getFirestore(appFb);
+    productos = await leerInventario();
+  }catch(e){
+    mostrarPantalla("Error al conectar/leer: "+e.message+"\n\nRevisá el config de Firebase y las reglas de lectura.", true, init);
+    return;
+  }
+  el("screen").classList.add("hidden");
+  el("app").classList.remove("hidden");
+  renderTallaChips();
+  renderFilterPanel();
+  actualizarBadge();
+  renderLista();
+  actualizarTotales();
+
+  // listeners
+  el("search").addEventListener("input", e => { ui.search = e.target.value; renderLista(); });
+  el("modeSeg").querySelectorAll("button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+  el("btnFilters").onclick = () => {
+    ui.panelAbierto = !ui.panelAbierto;
+    el("filterPanel").classList.toggle("hidden", !ui.panelAbierto);
+  };
+  el("soloSinContar").onclick = () => {
+    ui.soloSinContar = !ui.soloSinContar;
+    el("soloSinContar").classList.toggle("on", ui.soloSinContar);
+    renderLista();
+  };
+  el("btnPause").onclick = pausar;
+  el("btnResume").onclick = reanudar;
+  el("btnReset").onclick = reiniciar;
+  el("btnClose").onclick = cerrarYComparar;
+  el("cmpBack").onclick = () => { el("cmpView").classList.add("hidden"); };
+  el("cmpExport").onclick = exportarCSV;
+  el("cmpNuevo").onclick = reiniciar;
+}
+
+init();
+</script>
+</body>
+</html>
