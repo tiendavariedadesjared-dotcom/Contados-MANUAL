@@ -413,6 +413,22 @@ function fotoPrincipal(p){
   const pr = fs.find(f => f && f.principal && f.url);
   return (pr && pr.url) || (fs[0] && fs[0].url) || null;
 }
+/* devuelve <img> o el placeholder; descarta URLs blob: que no cargan fuera de su página */
+function thumbHtmlUrl(url){
+  if(!url || /^blob:/i.test(url)) return "👕";
+  return `<img loading="lazy" decoding="async" src="${escapeAttr(url)}" alt="">`;
+}
+/* si una imagen falla al cargar, la reemplaza por el placeholder (nada de ícono roto) */
+function attachImgFallback(root){
+  if(!root) return;
+  root.querySelectorAll("img").forEach(img => {
+    img.addEventListener("error", () => {
+      const s = document.createElement("span");
+      s.textContent = "👕";
+      img.replaceWith(s);
+    }, { once:true });
+  });
+}
 function extrasStr(p){
   const e = p.extras;
   if(!e || typeof e !== "object") return "";
@@ -645,6 +661,7 @@ function renderLista(){
   list.querySelectorAll(".stg.plus").forEach(b => b.onclick = () => stage(b.dataset.id, +1));
   list.querySelectorAll(".stg.minus").forEach(b => b.onclick = () => stage(b.dataset.id, -1));
   list.querySelectorAll(".c2-apply").forEach(b => b.onclick = () => aplicar(b.dataset.id));
+  attachImgFallback(list);
 }
 
 /* Vista PLANA: una tarjeta por producto (cuando se ve una sola talla) */
@@ -674,7 +691,7 @@ function renderAgrupado(items){
 function modelCardHtml(grupo){
   const rep = grupo.find(p => fotoPrincipal(p)) || grupo[0];
   const foto = fotoPrincipal(rep);
-  const thumb = foto ? `<img loading="lazy" decoding="async" src="${escapeAttr(foto)}" alt="">` : `👕`;
+  const thumb = thumbHtmlUrl(foto);
   const ex = extrasStr(rep);
   const totalModelo = grupo.reduce((s,p)=>s+contadoTotal(p.id),0);
 
@@ -716,9 +733,7 @@ function counterHtml(id){
 
 function cardHtml(p){
   const foto = fotoPrincipal(p);
-  const thumb = foto
-    ? `<img loading="lazy" decoding="async" src="${escapeAttr(foto)}" alt="">`
-    : `👕`;
+  const thumb = thumbHtmlUrl(foto);
   const ex = extrasStr(p);
   return `
   <div class="card">
@@ -962,7 +977,7 @@ function renderComparativo(){
   body.innerHTML = cards.map((g,idx) => {
     const rep = g.find(f=>fotoPrincipal(f.prod))?.prod || g[0].prod;
     const foto = fotoPrincipal(rep);
-    const thumb = foto ? `<img loading="lazy" decoding="async" src="${escapeAttr(foto)}" alt="">` : `👕`;
+    const thumb = thumbHtmlUrl(foto);
     const ex = extrasStr(rep);
     let sc=0, ss=0;
     const filas = g.map(f => {
@@ -993,6 +1008,7 @@ function renderComparativo(){
     </div>`;
   }).join("");
   body.querySelectorAll(".crow-focus").forEach(b => b.onclick = () => focusModel(cards[+b.dataset.i][0].prod));
+  attachImgFallback(body);
 }
 
 /* -------- Export CSV -------- */
