@@ -1162,8 +1162,12 @@ function renderComparativo(){
 /* -------- Export CSV -------- */
 function exportarCorrecciones(){
   if(!cmpData){ alert("Primero cerrá el conteo para comparar."); return; }
+  // tarjetas (modelos) con al menos una talla contada
+  const modelosContados = new Set();
+  cmpData.filas.forEach(f => { if(f.contado > 0) modelosContados.add(modelKey(f.prod)); });
+  // incluir TODAS las tallas de esas tarjetas (las no contadas quedan en 0), menos las descartadas
   const items = cmpData.filas
-    .filter(f => f.contado > 0 && !cmpDescartadas.has(modelKey(f.prod)))
+    .filter(f => modelosContados.has(modelKey(f.prod)) && !cmpDescartadas.has(modelKey(f.prod)))
     .map(f => ({
     id: f.id,
     eq: f.prod.eq ?? "",
@@ -1178,8 +1182,12 @@ function exportarCorrecciones(){
     nuevo_stk: f.contado,
     delta: f.contado - f.sistema
   }));
-  if(items.length===0){ alert("No hay variantes contadas para exportar."); return; }
+  if(items.length===0){ alert("No hay tarjetas contadas para exportar."); return; }
   const cambios = items.filter(i => i.delta !== 0).length;
+  const aCero = items.filter(i => i.contado === 0).length;
+  if(!confirm(`Se exportarán ${items.length} variantes de las tarjetas que contaste (${cambios} con cambio).`
+    + (aCero ? `\n\n⚠️ ${aCero} talla(s) de esas tarjetas que NO contaste se pondrán en 0.` : "")
+    + `\n\n¿Continuar?`)) return;
   const payload = {
     tipo: "correccion_inventario_conteo_fisico",
     version: 1,
