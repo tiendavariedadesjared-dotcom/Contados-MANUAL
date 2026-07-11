@@ -1197,11 +1197,33 @@ function exportarCorrecciones(){
     variantes_con_cambio: cambios,
     correcciones: items
   };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json;charset=utf-8"});
-  const a = document.createElement("a");
+  const json = JSON.stringify(payload, null, 2);
   const fecha = new Date().toISOString().slice(0,16).replace(/[:T]/g,"-");
+  const nombre = `correcciones_conteo_${fecha}.json`;
+  guardarArchivo(json, nombre, "application/json;charset=utf-8");
+}
+
+/* Muestra el diálogo "guardar como" si el navegador lo soporta; si no, descarga directa */
+async function guardarArchivo(contenido, nombre, tipo){
+  if(window.showSaveFilePicker){
+    try{
+      const handle = await window.showSaveFilePicker({
+        suggestedName: nombre,
+        types: [{ description: "Archivo", accept: { [tipo.split(";")[0]]: ["."+nombre.split(".").pop()] } }]
+      });
+      const w = await handle.createWritable();
+      await w.write(new Blob([contenido], {type:tipo}));
+      await w.close();
+      return;
+    }catch(e){
+      if(e && e.name === "AbortError") return;  // el usuario canceló el diálogo
+      // cualquier otro error -> caer a la descarga directa
+    }
+  }
+  const blob = new Blob([contenido], {type:tipo});
+  const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `correcciones_conteo_${fecha}.json`;
+  a.download = nombre;
   a.click();
   URL.revokeObjectURL(a.href);
 }
