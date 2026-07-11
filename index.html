@@ -930,14 +930,15 @@ function clasificar(contado, sistema){
 }
 
 function construirComparativo(invActual){
-  // mapa id -> producto (stock fresco)
+  // mapa id -> producto (stock fresco). Normalizamos id a TEXTO para evitar
+  // duplicados fantasma (la app guarda id numérico y el conteo lo guarda como texto).
   const sysMap = new Map();
-  for(const p of invActual) sysMap.set(p.id, p);
+  for(const p of invActual) sysMap.set(String(p.id), p);
 
-  // union de ids (sistema + contados)
+  // union de ids (sistema + contados), todos como texto
   const ids = new Set([...sysMap.keys()]);
-  for(const k of Object.keys(estado.fisico)) if(estado.fisico[k]>0) ids.add(k);
-  for(const k of Object.keys(estado.tramite)) if(estado.tramite[k]>0) ids.add(k);
+  for(const k of Object.keys(estado.fisico)) if(estado.fisico[k]>0) ids.add(String(k));
+  for(const k of Object.keys(estado.tramite)) if(estado.tramite[k]>0) ids.add(String(k));
 
   const filas = [];
   let totalContado=0, totalSistema=0;
@@ -950,9 +951,10 @@ function construirComparativo(invActual){
     totalContado += contado;
     if(cat === "ignorar") continue;
     // producto para mostrar: preferir el fresco; si se borró, usar el de la carga inicial
-    const prod = pSys || productos.find(x => x.id === id) || {id, eq:"(no está en el sistema)"};
+    const prod = pSys || productos.find(x => String(x.id) === id) || {id, eq:"(no está en el sistema)"};
     filas.push({
-      id, cat, contado, sistema, diff: contado - sistema, prod,
+      id: pSys ? pSys.id : id,   // id real (para el export)
+      cat, contado, sistema, diff: contado - sistema, prod,
       fisico: estado.fisico[id]||0, tramite: estado.tramite[id]||0
     });
   }
